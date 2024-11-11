@@ -1194,38 +1194,40 @@ export class InputHandler extends Disposable implements IInputHandler {
    */
   public eraseInDisplay(params: IParams, respectProtect: boolean = false): boolean {
     this._restrictCursor(this._bufferService.cols);
-    let j;
+    let i;
     switch (params.params[0]) {
       case 0:
-        j = this._activeBuffer.y;
-        this._dirtyRowTracker.markDirty(j);
-        this._eraseInBufferLine(j++, this._activeBuffer.x, this._bufferService.cols, this._activeBuffer.x === 0, respectProtect);
-        for (; j < this._bufferService.rows; j++) {
-          this._resetBufferLine(j, respectProtect);
+        i = this._activeBuffer.y;
+        this._dirtyRowTracker.markDirty(i);
+        this._eraseInBufferLine(i++, this._activeBuffer.x, this._bufferService.cols, this._activeBuffer.x === 0, respectProtect);
+        for (; i < this._bufferService.rows; i++) {
+          this._resetBufferLine(i, respectProtect);
         }
-        this._dirtyRowTracker.markDirty(j);
+        this._dirtyRowTracker.markDirty(i);
         break;
       case 1:
-        j = this._activeBuffer.y;
-        this._dirtyRowTracker.markDirty(j);
+        i = this._activeBuffer.y;
+        this._dirtyRowTracker.markDirty(i);
         // Deleted front part of line and everything before. This line will no longer be wrapped.
-        this._eraseInBufferLine(j, 0, this._activeBuffer.x + 1, true, respectProtect);
+        this._eraseInBufferLine(i, 0, this._activeBuffer.x + 1, true, respectProtect);
         if (this._activeBuffer.x + 1 >= this._bufferService.cols) {
           // Deleted entire previous line. This next line can no longer be wrapped.
-          this._activeBuffer.lines.get(j + 1)!.isWrapped = false;
+          this._activeBuffer.lines.get(i + 1)!.isWrapped = false;
         }
-        while (j--) {
-          this._resetBufferLine(j, respectProtect);
+        while (i--) {
+          this._resetBufferLine(i, respectProtect);
         }
         this._dirtyRowTracker.markDirty(0);
         break;
       case 2:
-        j = this._bufferService.rows;
-        this._dirtyRowTracker.markDirty(j - 1);
-        while (j--) {
-          this._resetBufferLine(j, respectProtect);
+        i = this._bufferService.rows;
+        const x = this._activeBuffer.getBlankLine(this._eraseAttrData());
+        for (; i-- && !respectProtect;)
+          this._activeBuffer.lines.get(this._activeBuffer.ybase + 1)?.translateToString() !== x && ((respectProtect = !0), this._dirtyRowTracker.markRangeDirty(0, i), i++)
+
+        for (; i-- >= 0;) {
+          this._bufferService.scroll(this._eraseAttrData());
         }
-        this._dirtyRowTracker.markDirty(0);
         break;
       case 3:
         // Clear scrollback (everything not in viewport)
